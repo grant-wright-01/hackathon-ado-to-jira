@@ -1,0 +1,12 @@
+{
+  [
+    {
+      "AzurePropertyPath": "",
+      "JiraPropertyPath": "",
+      "Condition": {
+        "Type": "Equals",
+        "Value": ""
+      }
+    }
+  ]
+}
