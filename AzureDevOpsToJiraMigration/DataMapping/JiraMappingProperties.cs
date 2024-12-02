@@ -6,6 +6,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping
     {
         public IEnumerable<JiraItemIssueType> IssueTypes { get; set; }
         public string ProjectId { get; set; }
-        public string UserId { get; set; }
+        public string DefaultUserId { get; set; }
+        public Dictionary<string, string> UserIdMapping { get; set; }
     }
 }

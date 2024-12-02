@@ -9,13 +9,14 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
     public class AzureToJiraTaskMapper : IAzureToJiraItemMapper
     {
         private readonly IOptions<AzureOptions> _azureOptions;
+        private readonly IJiraClientWrapper jiraClientWrapper;
 
         public AzureToJiraTaskMapper(IOptions<AzureOptions> azureOptions)
         {
             _azureOptions = azureOptions;
         }
 
-        public JiraItem Create(WorkItem workItem, JiraMappingProperties jiraProperties)
+        public JiraItem? Create(WorkItem workItem, JiraMappingProperties jiraProperties)
         {
             var workItemType = workItem.GetValueAsString("System.WorkItemType");
 
@@ -24,17 +25,31 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                 workItemType = "Story";
             }
 
-            var matchingIssueType = jiraProperties.IssueTypes.First(x => x.Name == workItemType);
+            var parentId = workItem.GetParentId();
+            if (workItemType.Equals("task", StringComparison.CurrentCultureIgnoreCase) && !string.IsNullOrEmpty(parentId))
+            {
+                workItemType = "Sub-task";
+            }
+
+            var matchingIssueType = jiraProperties.IssueTypes.FirstOrDefault(x => x.Name == workItemType);
+
+            if (matchingIssueType == null)
+            {
+                return null;
+            }
+
+            var assigneeId = workItem.GetMatchingOrDefaultUserId(jiraProperties);
 
             var jiraItem = new JiraItem
             {
                 AzureTicketNumber = workItem.Id.ToString()!,
+                AzureParentTicketNumber = parentId,
                 Fields = new Fields
                 {
+                    WorkItemType = workItemType,
                     Assignee = new Assignee
                     {
-                        // note: this value can come from doing a lookup on the jira users api endpoint
-                        Id = jiraProperties.UserId
+                        Id = assigneeId
                     },
                     Description = new Description
                     {
@@ -67,10 +82,9 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     },
                     Reporter = new Reporter
                     {
-                        Id = jiraProperties.UserId
+                        Id = assigneeId
                     },
                     Summary = workItem.GetValueAsString("System.Title")!,
-                    StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
                 Update = new Update()
             };
@@ -86,7 +100,24 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                 string.Equals(workItemType, "story", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(workItemType, "question", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(workItemType, "user story", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workItemType, "issue", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workItemType, "deployment", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(workItemType, "spike", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string GenerateSummary(WorkItem workItem)
+        {
+            var workItemType = workItem.GetValueAsString("System.WorkItemType");
+            var summary = string.Empty;
+
+            if (workItemType.Equals("deployment", StringComparison.CurrentCultureIgnoreCase))
+            {
+                summary += "Deployment: ";
+            }
+
+            summary += workItem.GetValueAsString("System.Title");
+
+            return summary;
         }
 
         private string GenerateDescription(WorkItem workItem)
@@ -96,9 +127,23 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             var azureTicketUrl = $"{_azureOptions.Value.OrgUrl}/{_azureOptions.Value.TeamProjectName}/_workitems/edit/{workItem.Id}";
 
             descriptionBuilder.AppendLine(description);
+
+            if (workItem.Fields.ContainsKey("Microsoft.VSTS.Common.AcceptanceCriteria"))
+            {
+                var acceptanceCriteria = workItem.Fields["Microsoft.VSTS.Common.AcceptanceCriteria"].ToString();
+                descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Acceptance criteria:");
+                descriptionBuilder.AppendLine(acceptanceCriteria);
+            }
+
+            var storyPoints = workItem.GetValueAsString("Microsoft.VSTS.Scheduling.StoryPoints");
+            if (!string.IsNullOrEmpty(storyPoints))
+            {
+                descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Story points: {storyPoints}");
+            }
+
             descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Azure ticket url:");
             descriptionBuilder.AppendLine(azureTicketUrl);
-            return descriptionBuilder.ToString();
+            return descriptionBuilder.ToString().StripHTML().Trim();
         }
     }
 }

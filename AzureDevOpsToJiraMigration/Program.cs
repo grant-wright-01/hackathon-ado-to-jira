@@ -19,8 +19,8 @@ ConfigureServices(serviceCollection, config);
 
 var serviceProvider = serviceCollection.BuildServiceProvider();
 var azureToJiraMigrator = serviceProvider.GetService<IAzureToJiraMigrator>()!;
-await azureToJiraMigrator.Migrate();
 
+await azureToJiraMigrator.Migrate();
 
 static void ConfigureServices(ServiceCollection serviceCollection, IConfiguration configuration)
 {

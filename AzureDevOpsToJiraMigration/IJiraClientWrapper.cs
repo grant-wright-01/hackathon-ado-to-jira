@@ -5,9 +5,10 @@ namespace AzureDevOpsToJiraMigration
 {
     public interface IJiraClientWrapper
     {
-        Task CreateJiraItems(IEnumerable<JiraItem> jiraItems);
-        Task<IEnumerable<JiraItemIssueType>> GetAllIssueTypes();
+        Task<JiraProject> GetProjectData();
+        Task<IEnumerable<JiraItemIssueType>> GetAllIssueTypes(string productId);
         Task<string> GetProjectId();
-        Task<string> GetUserId();
+        Task<string> GetUserId(string emailAddress);
+        Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> items);
     }
 }

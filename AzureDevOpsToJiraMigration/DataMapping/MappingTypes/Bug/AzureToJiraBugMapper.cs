@@ -1,6 +1,7 @@
 ﻿using AzureDevOpsToJiraMigration.Models.JiraItem;
 using AzureDevOpsToJiraMigration.Options;
 using Microsoft.Extensions.Options;
+using Microsoft.TeamFoundation.WorkItemTracking.Process.WebApi.Models.Process;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using System.Text;
 
@@ -17,17 +18,20 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
 
         public JiraItem Create(WorkItem workItem, JiraMappingProperties jiraProperties)
         {
-            var matchingIssueType = jiraProperties.IssueTypes.First(x => x.Name == workItem.GetValueAsString("System.WorkItemType"));
+            var workItemType = workItem.GetValueAsString("System.WorkItemType");
+            var matchingIssueType = jiraProperties.IssueTypes.First(x => x.Name == workItemType);
+            var assigneeId = workItem.GetMatchingOrDefaultUserId(jiraProperties);
 
             var jiraItem = new JiraItem
             {
                 AzureTicketNumber = workItem.Id.ToString()!,
+                AzureParentTicketNumber = workItem.GetParentId(),
                 Fields = new Fields
                 {
+                    WorkItemType = workItemType,
                     Assignee = new Assignee
                     {
-                        // note: this value can come from doing a lookup on the jira users api endpoint
-                        Id = jiraProperties.UserId
+                        Id = assigneeId
                     },
                     Description = new Description
                     {
@@ -60,10 +64,10 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
                     },
                     Reporter = new Reporter
                     {
-                        Id = jiraProperties.UserId
+                        Id = assigneeId
                     },
                     Summary = workItem.GetValueAsString("System.Title")!,
-                    StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
+                    //StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
                 Update = new Update()
             };
@@ -87,7 +91,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
             descriptionBuilder.AppendLine(systemInformation);
             descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Azure ticket url:");
             descriptionBuilder.AppendLine(azureTicketUrl);
-            return descriptionBuilder.ToString();
+            return descriptionBuilder.ToString().StripHTML().Trim();
         }
     }
 }

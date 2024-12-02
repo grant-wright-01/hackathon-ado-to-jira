@@ -17,7 +17,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping
 
         public async Task<IEnumerable<JiraItem>> MapAzureItemsToJiraItems(IEnumerable<WorkItem> azureItems)
         {
-            var jiraMappingProperties = await GenerateJiraMappingProperties();
+            var jiraMappingProperties = await GenerateJiraMappingProperties(azureItems);
 
             var mappedJiraItems = new List<JiraItem>();
 
@@ -34,17 +34,57 @@ namespace AzureDevOpsToJiraMigration.DataMapping
             return mappedJiraItems;
         }
 
-        private async Task<JiraMappingProperties> GenerateJiraMappingProperties()
+        private async Task<Dictionary<string, string>> GetJiraUsersFromAzureUsers(IEnumerable<WorkItem> azureItems)
         {
-            var jiraIssueTypes = await _jiraClientWrapper.GetAllIssueTypes();
+            var uniqueAzureUsers = new List<string>();
+            foreach (var azureItem in azureItems.Where(x => x.Fields.ContainsKey("System.AssignedTo")))
+            {
+                var identityReference = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)azureItem.Fields["System.AssignedTo"]);
+                var emailAddress = identityReference.UniqueName;
+                var isInactive = identityReference.Inactive;
+
+                if (!isInactive && 
+                    !uniqueAzureUsers.Contains(emailAddress) && 
+                    !emailAddress.Contains("OIDCONFLICT", StringComparison.CurrentCultureIgnoreCase) && 
+                    emailAddress.EndsWith("@sainsburys.co.uk", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    uniqueAzureUsers.Add(emailAddress);
+                }
+            }
+
+            uniqueAzureUsers.Sort();
+            var jiraUsers = new Dictionary<string, string>();
+
+            foreach (var azureUser in uniqueAzureUsers)
+            {
+                try
+                {
+                    var jiraUser = await _jiraClientWrapper.GetUserId(azureUser);
+                    jiraUsers.Add(azureUser, jiraUser);
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+
+            return jiraUsers;
+        }
+
+        private async Task<JiraMappingProperties> GenerateJiraMappingProperties(IEnumerable<WorkItem> azureItems)
+        {
             var productId = await _jiraClientWrapper.GetProjectId();
-            var userId = await _jiraClientWrapper.GetUserId();
+            var jiraIssueTypes = await _jiraClientWrapper.GetAllIssueTypes(productId);
+
+            // default person for the tickets on the board
+            var defaultUser = await _jiraClientWrapper.GetUserId("trevor.baker@sainsburys.co.uk");
 
             return new JiraMappingProperties
             {
                 IssueTypes = jiraIssueTypes,
                 ProjectId = productId,
-                UserId = userId
+                DefaultUserId = defaultUser,
+                UserIdMapping = await GetJiraUsersFromAzureUsers(azureItems)
             };
         }
     }

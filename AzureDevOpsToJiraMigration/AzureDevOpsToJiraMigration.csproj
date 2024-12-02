@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
-    <None Remove="DataMapping\AzureToJiraPropertyMapping.json" />
     <None Remove="ReportGenerator\index-template.html" />
   </ItemGroup>
 
@@ -29,9 +28,6 @@
 
   <ItemGroup>
     <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="DataMapping\AzureToJiraPropertyMapping.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="ReportGenerator\index-template.html">

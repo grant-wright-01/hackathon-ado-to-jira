@@ -6,6 +6,10 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
     {
         [JsonIgnore]
         public string AzureTicketNumber { get; set; }
+
+        [JsonIgnore]
+        public string AzureParentTicketNumber { get; set; }
+
         public Fields Fields { get; set; }
         public Update Update { get; set; }
     }

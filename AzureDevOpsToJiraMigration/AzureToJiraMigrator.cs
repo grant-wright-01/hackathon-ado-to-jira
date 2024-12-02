@@ -1,4 +1,5 @@
 ﻿using AzureDevOpsToJiraMigration.DataMapping;
+using AzureDevOpsToJiraMigration.Models.JiraItem;
 
 namespace AzureDevOpsToJiraMigration
 {
@@ -21,8 +22,30 @@ namespace AzureDevOpsToJiraMigration
         public async Task Migrate()
         {
             var azureItems = await _azureClient.GetWorkItems();
-            var mappedJiraItems = await _azureToJiraPropertyMapper.MapAzureItemsToJiraItems(azureItems);
-            await _jiraWrapper.CreateJiraItems(mappedJiraItems);
+
+            var latest = azureItems.OrderByDescending(x => x.Id).Take(50);
+
+            var mappedJiraItems = await _azureToJiraPropertyMapper.MapAzureItemsToJiraItems(latest);
+
+            var items = GroupAndOrderListByParent(mappedJiraItems);
+            await _jiraWrapper.CreateHierachicalJiraItems(items);
+        }
+
+        private IEnumerable<IGrouping<string, JiraItem>> GroupAndOrderListByParent(IEnumerable<JiraItem> jiraItems)
+        {
+            var hierarchyOrder = new Dictionary<string, int>
+            {
+                { "Epic", 1 },
+                { "Feature", 2 },
+                { "Story", 3 },
+                { "Spike", 4 },
+                { "Bug", 5 },
+                { "Task", 6 },
+                { "Sub-task", 7 },
+                { "Issue", 8 },
+            };
+
+            return jiraItems.GroupBy(x => x.Fields.WorkItemType).OrderBy(x => hierarchyOrder[x.Key]);
         }
     }
 }
