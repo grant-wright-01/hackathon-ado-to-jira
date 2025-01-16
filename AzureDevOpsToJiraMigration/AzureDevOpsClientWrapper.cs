@@ -33,7 +33,7 @@ namespace AzureDevOpsToJiraMigration
             }
 
             var getWorkItemsQuery = await GetWorkItemClient(witClient, myQueriesFolder);
-            var filteredQuery = myQueriesFolder.Children.FirstOrDefault(x => x.Name.Equals("GrantExportToJiraQuery"));
+            var filteredQuery = myQueriesFolder.Children.FirstOrDefault(x => x.Name.Equals("Get Test"));
 
             WorkItemQueryResult result = await witClient.QueryByIdAsync(filteredQuery.Id);
 
@@ -51,7 +51,7 @@ namespace AzureDevOpsToJiraMigration
                 workItemRefs = result.WorkItems.Skip(skip).Take(batchSize);
                 if (workItemRefs.Any())
                 {
-                    var workItems = await witClient.GetWorkItemsAsync(workItemRefs.Select(wir => wir.Id), default, default, WorkItemExpand.Relations);
+                    var workItems = await witClient.GetWorkItemsAsync(workItemRefs.Select(wir => wir.Id), default, default, WorkItemExpand.Relations);  
                     workItemIds.AddRange(workItems);
                 }
                 skip += batchSize;
@@ -65,7 +65,7 @@ namespace AzureDevOpsToJiraMigration
 
         private async Task<QueryHierarchyItem> GetWorkItemClient(WorkItemTrackingHttpClient witClient, QueryHierarchyItem myQueriesFolder)
         {
-            string queryName = "Get Everything";
+            string queryName = "Get Test";
             QueryHierarchyItem getWorkItemsQuery = null;
 
             if (myQueriesFolder.Children != null)
@@ -78,7 +78,8 @@ namespace AzureDevOpsToJiraMigration
                 getWorkItemsQuery = new QueryHierarchyItem()
                 {
                     Name = queryName,
-                    Wiql = "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo],[System.State],[System.Tags] FROM WorkItems",
+                    Wiql = "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo],[System.State],[System.Tags]," +
+                    "[System.TeamProject],[System.IterationPath],[_links] FROM WorkItems",
                     IsFolder = false
                 };
                 getWorkItemsQuery = await witClient.CreateQueryAsync(getWorkItemsQuery, _azureOptions.Value.TeamProjectName, myQueriesFolder.Name);

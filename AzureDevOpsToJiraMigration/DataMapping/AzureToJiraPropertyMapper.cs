@@ -27,7 +27,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping
 
                 if (jiraItem != null)
                 {
-                    mappedJiraItems.Add(jiraItem);
+                    mappedJiraItems.Add(await jiraItem);
                 }
             }
 
@@ -77,7 +77,10 @@ namespace AzureDevOpsToJiraMigration.DataMapping
             var jiraIssueTypes = await _jiraClientWrapper.GetAllIssueTypes(productId);
 
             // default person for the tickets on the board
-            var defaultUser = await _jiraClientWrapper.GetUserId("trevor.baker@sainsburys.co.uk");
+            //var defaultUser = await _jiraClientWrapper.GetUserId("@sainsburys.co.uk");
+
+
+            var defaultUser = "";
 
             return new JiraMappingProperties
             {

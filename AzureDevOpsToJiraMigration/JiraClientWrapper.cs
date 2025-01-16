@@ -137,9 +137,10 @@ namespace AzureDevOpsToJiraMigration
 
             var content = await issueTypeResponse.Content.ReadAsStringAsync();
             var users = JArray.Parse(content);
+            var testMatching = users[0]["emailAddress"];
 
-            var userMatchingOnEmail = users.FirstOrDefault(x => (x["emailAddress"]?.ToString() ?? "") == emailAddress);
-            
+            var userMatchingOnEmail = users.First();
+
             if (userMatchingOnEmail == null)
             {
                 throw new Exception($"Error attempting to get user from jira, status code: {issueTypeResponse.StatusCode}");
@@ -246,7 +247,7 @@ namespace AzureDevOpsToJiraMigration
                             ResponseBody = responseContent
                         });
 
-
+                        
                         _azureIdToJiraId.Add(jiraItem.AzureTicketNumber, createdItemKey);
                         successCounter++;
                     }

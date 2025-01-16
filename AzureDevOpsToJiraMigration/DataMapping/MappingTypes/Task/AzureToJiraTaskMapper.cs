@@ -16,7 +16,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             _azureOptions = azureOptions;
         }
 
-        public JiraItem? Create(WorkItem workItem, JiraMappingProperties jiraProperties)
+        public async Task<JiraItem?> Create(WorkItem workItem, JiraMappingProperties jiraProperties)
         {
             var workItemType = workItem.GetValueAsString("System.WorkItemType");
 
@@ -80,11 +80,26 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     {
                         Id = jiraProperties.ProjectId
                     },
+                    Status = new Status
+                    {
+                        Name = workItem.GetValueAsString("System.State")
+                    },
+                    Customfield_10020 =
+                    {
+                        Name = "TOR " + workItem.GetSprint(),
+                    }, // Sprint
+                    Customfield_10001 = {
+                          Name = "Tornado",
+                          Title = "Tornado",
+                    }, // Team
+                    Customfield_10054 = workItem.GetValue<int>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
                     Reporter = new Reporter
                     {
-                        Id = assigneeId
+                        EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
                     },
                     Summary = workItem.GetValueAsString("System.Title")!,
+                    Comment = await workItem.GetComments(_azureOptions.Value)
+                    //StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
                 Update = new Update()
             };
@@ -113,6 +128,21 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             if (workItemType.Equals("deployment", StringComparison.CurrentCultureIgnoreCase))
             {
                 summary += "Deployment: ";
+            }
+
+            if (workItemType.Equals("spike", StringComparison.CurrentCultureIgnoreCase))
+            {
+                summary += "Spike: ";
+            }
+
+            if (workItemType.Equals("epic", StringComparison.CurrentCultureIgnoreCase))
+            {
+                summary += "Epic: ";
+            }
+
+            if (workItemType.Equals("question", StringComparison.CurrentCultureIgnoreCase))
+            {
+                summary += "Question: ";
             }
 
             summary += workItem.GetValueAsString("System.Title");

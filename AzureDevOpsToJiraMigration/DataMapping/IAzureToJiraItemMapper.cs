@@ -6,6 +6,6 @@ namespace AzureDevOpsToJiraMigration.DataMapping
     public interface IAzureToJiraItemMapper
     {
         public bool IsMatch(string workItemType);
-        JiraItem? Create(WorkItem workItem, JiraMappingProperties jiraProperties);
+        Task<JiraItem?> Create(WorkItem workItem, JiraMappingProperties jiraProperties);
     }
 }

@@ -16,7 +16,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
             _azureOptions = azureOptions;
         }
 
-        public JiraItem Create(WorkItem workItem, JiraMappingProperties jiraProperties)
+        public async Task<JiraItem> Create(WorkItem workItem, JiraMappingProperties jiraProperties)
         {
             var workItemType = workItem.GetValueAsString("System.WorkItemType");
             var matchingIssueType = jiraProperties.IssueTypes.First(x => x.Name == workItemType);
@@ -62,11 +62,25 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
                     {
                         Id = jiraProperties.ProjectId
                     },
+                    Status = new Status
+                    {
+                        Name = workItem.GetValueAsString("System.State")
+                    },
+                    Customfield_10020 =
+                    {
+                        Name = "TOR " + workItem.GetSprint(),
+                    }, // Sprint
+                    Customfield_10001 = {
+                          Name = "Tornado",
+                          Title = "Tornado",
+                    }, // Team
+                    Customfield_10054 = workItem.GetValue<int>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
                     Reporter = new Reporter
                     {
-                        Id = assigneeId
+                        EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
                     },
                     Summary = workItem.GetValueAsString("System.Title")!,
+                    Comment = await workItem.GetComments(_azureOptions.Value)
                     //StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
                 Update = new Update()

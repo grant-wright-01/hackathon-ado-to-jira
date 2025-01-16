@@ -14,7 +14,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.Factories
             _mappers = mappers;
         }
 
-        public JiraItem? Create(WorkItem workItem, JiraMappingProperties jiraMappingProperties)
+        public Task<JiraItem?> Create(WorkItem workItem, JiraMappingProperties jiraMappingProperties)
         {
             var workItemType = workItem.GetValueAsString("System.WorkItemType");
 

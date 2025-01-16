@@ -3,5 +3,6 @@
     public class Reporter
     {
         public string Id { get; set; }
+        public string EmailAddress { get; set; }
     }
 }

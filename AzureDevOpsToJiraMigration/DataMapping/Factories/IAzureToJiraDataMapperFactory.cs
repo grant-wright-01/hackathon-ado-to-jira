@@ -5,6 +5,6 @@ namespace AzureDevOpsToJiraMigration.DataMapping.Factories
 {
     public interface IAzureToJiraDataMapperFactory
     {
-        JiraItem? Create(WorkItem workItem, JiraMappingProperties jiraMappingProperties);
+        Task<JiraItem?> Create(WorkItem workItem, JiraMappingProperties jiraMappingProperties);
     }
 }
