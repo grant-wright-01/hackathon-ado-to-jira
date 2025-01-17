@@ -16,7 +16,7 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
         public string Summary { get; set; }
         //[JsonPropertyName("customfield_10054")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int Customfield_10054 { get; set; } // Story Point
+        public double? Customfield_10054 { get; set; } // Story Point
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Team Customfield_10001 { get; set; } // Team
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

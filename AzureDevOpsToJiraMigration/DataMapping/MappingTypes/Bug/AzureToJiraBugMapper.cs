@@ -66,15 +66,16 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
                     {
                         Name = workItem.GetValueAsString("System.State")
                     },
-                    Customfield_10020 =
+                    Customfield_10020 = new Sprint
                     {
-                        Name = "TOR " + workItem.GetSprint(),
+                        Name = $"TOR {workItem.GetSprint()}",
                     }, // Sprint
-                    Customfield_10001 = {
+                    Customfield_10001 = new Team
+                    {
                           Name = "Tornado",
                           Title = "Tornado",
                     }, // Team
-                    Customfield_10054 = workItem.GetValue<int>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
+                    Customfield_10054 = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
                     Reporter = new Reporter
                     {
                         EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
