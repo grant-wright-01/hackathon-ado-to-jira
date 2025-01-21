@@ -1,5 +1,6 @@
 ﻿using AzureDevOpsToJiraMigration.Models;
 using AzureDevOpsToJiraMigration.Models.JiraItem;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 
 namespace AzureDevOpsToJiraMigration
 {
@@ -9,6 +10,6 @@ namespace AzureDevOpsToJiraMigration
         Task<IEnumerable<JiraItemIssueType>> GetAllIssueTypes(string productId);
         Task<string> GetProjectId();
         Task<string> GetUserId(string emailAddress);
-        Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> items);
+        Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> items, IEnumerable<WorkItem> azItems);
     }
 }

@@ -5,6 +5,9 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
     public class CommentBody
     {
         [JsonPropertyName("content")]
-        public Content Content { get; set; }
+        public IEnumerable<Content> Content { get; set; }
+        public string Type { get; set; }
+        [JsonPropertyName("version")]
+        public int Version { get; set; }
     }
 }

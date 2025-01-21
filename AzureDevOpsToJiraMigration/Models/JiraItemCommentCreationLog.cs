@@ -5,6 +5,6 @@ namespace AzureDevOpsToJiraMigration.Models
     public class JiraItemCommentCreationLog: JiraItemCreationLog
     {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Comment { get; set; }
+        public bool Comment { get; set; } = true;
     }
 }

@@ -8,7 +8,11 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
 {
     public class Team
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public string Title { get; set; }
+        public bool isVisible { get; set; } = true;
+        public bool isShared { get; set; } = true;
+        public bool isVerified { get; set; } = false;
     }
 }

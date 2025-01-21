@@ -28,7 +28,7 @@ namespace AzureDevOpsToJiraMigration
             var mappedJiraItems = await _azureToJiraPropertyMapper.MapAzureItemsToJiraItems(latest);
 
             var items = GroupAndOrderListByParent(mappedJiraItems);
-            await _jiraWrapper.CreateHierachicalJiraItems(items);  // post jira items to jira board
+            await _jiraWrapper.CreateHierachicalJiraItems(items, latest);  // post jira items to jira board
         }
 
         private IEnumerable<IGrouping<string, JiraItem>> GroupAndOrderListByParent(IEnumerable<JiraItem> jiraItems)

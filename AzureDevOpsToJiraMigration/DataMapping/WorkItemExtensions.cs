@@ -71,24 +71,25 @@ namespace AzureDevOpsToJiraMigration.DataMapping
                     AzureDevOpsToJiraMigration.Models.JiraItem.Comment mappedComment =
                                 new AzureDevOpsToJiraMigration.Models.JiraItem.Comment
                                 {
-                                    Author = new CommentAuthor
-                                    {
-                                        EmailAddress = comment.CreatedBy.UniqueName,
-                                    },
                                     Body = new CommentBody
                                     {
-                                        Content = new Content
+                                        Content = new List<Content>
                                         {
-                                            Contents = new List<InnerContent>
+                                            new Content
                                             {
-                                            new InnerContent
-                                            {
-                                                Type = "text",
-                                                Text = comment.Text.StripHTML().Trim(),
+                                                Contents = new List<InnerContent>
+                                                {
+                                                    new InnerContent
+                                                    {
+                                                        Type = "text",
+                                                        Text = $"Authored By: {comment.CreatedBy.UniqueName}{Environment.NewLine}{Environment.NewLine} {comment.Text.StripHTML().Trim()}" ,
+                                                    }
+                                                },
+                                                Type = "paragraph",
                                             }
-                                            },
-                                            Type = "paragraph"
-                                        }
+                                        },
+                                        Type = "doc",
+                                        Version = comment.Version
                                     }
                                 };
                     retrievedComments.Add(mappedComment);

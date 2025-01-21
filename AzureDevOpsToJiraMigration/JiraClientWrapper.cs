@@ -1,8 +1,10 @@
-﻿using AzureDevOpsToJiraMigration.Models;
+﻿using AzureDevOpsToJiraMigration.DataMapping;
+using AzureDevOpsToJiraMigration.Models;
 using AzureDevOpsToJiraMigration.Models.JiraItem;
 using AzureDevOpsToJiraMigration.Options;
 using AzureDevOpsToJiraMigration.ReportGenerator;
 using Microsoft.Extensions.Options;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Text.Json;
@@ -158,7 +160,7 @@ namespace AzureDevOpsToJiraMigration
             };
         }
 
-        public async Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> jiraItems)
+        public async Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> jiraItems, IEnumerable<WorkItem> azItems)
         {
             var migrationLog = new MigrationLog
             {
@@ -170,8 +172,11 @@ namespace AzureDevOpsToJiraMigration
             var jiraLogMessages = new List<JiraItemCreationLog>();
             Console.WriteLine($"Attempting to create {jiraItems.Count()} jira items");
             var counter = 0;
+            var commentsCounter = 0;
             var successCounter = 0;
+            var commentsSuccessCounter = 0;
             var failedCounter = 0;
+            var failedCommentCounter = 0;
             var features = jiraItems.Where(x => x.Key == "Feature");
 
             foreach (var item in jiraItems.Where(x => x.Key != "Feature"))
@@ -247,7 +252,54 @@ namespace AzureDevOpsToJiraMigration
                             ResponseBody = responseContent
                         });
 
-                        
+
+                        if (jiraItem.Fields.Labels.Contains("HasComments"))
+                        {
+                            var azIndex = Int32.Parse(jiraItem.AzureTicketNumber);
+                            var wItemComments = await azItems.First(az => az.Id.Equals(azIndex)).GetComments(_azureOptions.Value);
+
+                            foreach (var comment in wItemComments.Comments)
+                            {
+                                commentsCounter++;
+                                var jsonCommentRequestString = JsonSerializer.Serialize(comment, GetSerializerOptions());
+                                var commentContent = new StringContent(jsonCommentRequestString, Encoding.UTF8, "application/json");
+                                var commentRequest = new HttpRequestMessage(HttpMethod.Post, $"rest/api/3/issue/{createdItemKey}/comment")
+                                {
+
+                                    Content = commentContent // new StringContent("{body: " + $"{commentContent}", Encoding.UTF8, "application/json")
+                                };
+
+                                commentRequest.Headers.Authorization = new BasicAuthenticationHeaderValue(_jiraOptions.Value.Username, _jiraOptions.Value.ApiToken);
+                                //commentRequest
+
+                                var createJiraItemCommentResponse = await _httpClient.SendAsync(commentRequest);
+                                var commentResponseContent = await createJiraItemCommentResponse.Content.ReadAsStringAsync();
+
+                                if (!createJiraItemCommentResponse.IsSuccessStatusCode)
+                                {
+                                    jiraLogMessages.Add(new JiraItemCommentCreationLog
+                                    {
+                                        AzureTicketId = jiraItem.AzureTicketNumber,
+                                        AzureItemUrl = $"{_azureOptions.Value.OrgUrl}/{_azureOptions.Value.TeamProjectName}/_workitems/edit/{jiraItem.AzureTicketNumber}",
+                                        IsSuccess = false,
+                                        RequestBody = jsonCommentRequestString,
+                                        ResponseBody = commentResponseContent,
+                                        StatusCode = (int)createJiraItemResponse.StatusCode
+                                    });
+
+                                    Console.WriteLine($"{DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToLongTimeString()} - ({commentsCounter}) - Failed to create jira item comment");
+                                    failedCommentCounter++;
+                                    continue;
+                                }
+                                var commentResponseObject = JObject.Parse(commentResponseContent);
+                                var createdCommentId = commentResponseObject["id"]!.ToString();
+
+                                Console.WriteLine($"{DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToLongTimeString()} - ({commentsCounter}) - Successfully created jira item comment: {createdCommentId}");
+                                commentsSuccessCounter++;
+                            }
+                            
+                        }
+
                         _azureIdToJiraId.Add(jiraItem.AzureTicketNumber, createdItemKey);
                         successCounter++;
                     }
@@ -261,7 +313,9 @@ namespace AzureDevOpsToJiraMigration
             }
 
             migrationLog.NumberOfFailedMigrations = failedCounter;
+            migrationLog.NumberOfFailedCommentsMigrations = failedCommentCounter;
             migrationLog.NumberOfSuccessfulMigrations = successCounter;
+            migrationLog.NumberOfSuccessfulCommentsMigrations = commentsSuccessCounter;
             migrationLog.JiraItemCreationLogs = jiraLogMessages;
             migrationLog.EndTime = DateTime.Now;
             migrationLog.DurationInSeconds = (migrationLog.EndTime - migrationLog.StartTime).TotalSeconds;

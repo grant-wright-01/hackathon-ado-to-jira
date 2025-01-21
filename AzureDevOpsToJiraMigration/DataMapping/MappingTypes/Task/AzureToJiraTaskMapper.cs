@@ -80,26 +80,28 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     {
                         Id = jiraProperties.ProjectId
                     },
-                    Status = new Status
-                    {
-                        Name = workItem.GetValueAsString("System.State")
-                    },
-                    Customfield_10020 = new Sprint
-                    {
-                        Name = $"TOR {workItem.GetSprint()}",
-                    }, // Sprint
-                    Customfield_10001 = new Team
-                    {
-                          Name = "Tornado",
-                          Title = "Tornado",
-                    }, // Team
-                    Customfield_10054 = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
-                    Reporter = new Reporter
-                    {
-                        EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
-                    },
+                    //Status = new Status
+                    //{
+                    //    Name = workItem.GetValueAsString("System.State")
+                    //},
+                    //////Customfield_10020 = new Sprint
+                    //////{
+                    //////    Id = 28127,
+                    //////    Name = $"TOR {workItem.GetSprint()}",
+                    //////}, // Sprint
+                    //Customfield_10001 = new Team
+                    //{
+                    //    Id = "0e7b2cd5-58cc-4bdf-a03d-1056932bf9f8-190",
+                    //    Name = "Tornado",
+                    //    Title = "Tornado",
+                    //}, // Team
+                    //Customfield_10054 = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints"), // story point
+                    //Reporter = new Reporter
+                    //{
+                    //    EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
+                    //},
                     Summary = workItem.GetValueAsString("System.Title")!,
-                    Comment = await workItem.GetComments(_azureOptions.Value)
+                    //Comment = await workItem.GetComments(_azureOptions.Value)
                     //StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
                 Update = new Update()
@@ -157,7 +159,19 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             var description = workItem.GetValueAsString("System.Description");
             var azureTicketUrl = $"{_azureOptions.Value.OrgUrl}/{_azureOptions.Value.TeamProjectName}/_workitems/edit/{workItem.Id}";
 
-            descriptionBuilder.AppendLine(description);
+            string sprint = workItem.GetSprint();
+            if (!string.IsNullOrEmpty(sprint))
+            {
+                descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Issue sprint: {sprint}{Environment.NewLine}");
+            }
+
+            string status = workItem.GetValueAsString("System.State");
+            if (!string.IsNullOrEmpty(status))
+            {
+                descriptionBuilder.AppendLine($"Issue Status: {status}{Environment.NewLine}");
+            }
+
+            descriptionBuilder.AppendLine($"Description:{Environment.NewLine}{description}");
 
             if (workItem.Fields.ContainsKey("Microsoft.VSTS.Common.AcceptanceCriteria"))
             {
@@ -170,7 +184,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             if (!string.IsNullOrEmpty(storyPoints))
             {
                 descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Story points: {storyPoints}");
-            }
+            } 
 
             descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Azure ticket url:");
             descriptionBuilder.AppendLine(azureTicketUrl);

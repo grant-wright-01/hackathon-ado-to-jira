@@ -8,7 +8,9 @@
         public double DurationInSeconds { get; set; }
         public int NumberOfTicketsToProcess { get; set; }
         public int NumberOfSuccessfulMigrations { get; set; }
+        public int NumberOfSuccessfulCommentsMigrations { get; set; }
         public int NumberOfFailedMigrations { get; set; }
+        public int NumberOfFailedCommentsMigrations { get; set; }
         public IEnumerable<JiraItemCreationLog> JiraItemCreationLogs { get; set; }
     }
 }

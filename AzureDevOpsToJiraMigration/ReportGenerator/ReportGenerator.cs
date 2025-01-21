@@ -17,7 +17,9 @@ namespace AzureDevOpsToJiraMigration.ReportGenerator
                 .Replace("{{@durationInSeconds}}", migrationLog.DurationInSeconds.ToString())
                 .Replace("{{@numberOfTicketsToProcess}}", migrationLog.NumberOfTicketsToProcess.ToString())
                 .Replace("{{@numberOfSuccessfulMigrations}}", migrationLog.NumberOfSuccessfulMigrations.ToString())
+                .Replace("{{@numberOfSuccessfulCommentsMigrations}}", migrationLog.NumberOfSuccessfulCommentsMigrations.ToString())
                 .Replace("{{@numberOfFailedMigrations}}", migrationLog.NumberOfFailedMigrations.ToString())
+                .Replace("{{@numberOfFailedCommentsMigrations}}", migrationLog.NumberOfFailedCommentsMigrations.ToString())
                 .Replace("{{@migrationResultsBody}}", GenerateMigrationResultsBody(migrationLog));
 
             await CreateHtmlFile(htmlContent);
