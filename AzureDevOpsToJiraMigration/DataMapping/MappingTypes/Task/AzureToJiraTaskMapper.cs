@@ -31,6 +31,15 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                 workItemType = "Sub-task";
             }
 
+            if (workItemType.Equals("spike", StringComparison.CurrentCultureIgnoreCase) ||
+                string.Equals(workItemType, "feature", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workItemType, "question", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workItemType, "issue", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workItemType, "deployment", StringComparison.OrdinalIgnoreCase))
+            {
+                workItemType = "Task";
+            }
+
             var matchingIssueType = jiraProperties.IssueTypes.FirstOrDefault(x => x.Name == workItemType);
 
             if (matchingIssueType == null)
@@ -100,7 +109,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     //{
                     //    EmailAddress = ((Microsoft.VisualStudio.Services.WebApi.IdentityRef)workItem.Fields["System.AssignedTo"]).UniqueName
                     //},
-                    Summary = workItem.GetValueAsString("System.Title")!,
+                    Summary = GenerateSummary(workItem),
                     //Comment = await workItem.GetComments(_azureOptions.Value)
                     //StoryPointEstimate = workItem.GetValue<double?>("Microsoft.VSTS.Scheduling.StoryPoints")
                 },
@@ -130,22 +139,22 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
 
             if (workItemType.Equals("deployment", StringComparison.CurrentCultureIgnoreCase))
             {
-                summary += "Deployment: ";
+                summary += "DEPLOYMENT: ";
             }
 
             if (workItemType.Equals("spike", StringComparison.CurrentCultureIgnoreCase))
             {
-                summary += "Spike: ";
+                summary += "SPIKE: ";
             }
 
             if (workItemType.Equals("epic", StringComparison.CurrentCultureIgnoreCase))
             {
-                summary += "Epic: ";
+                summary += "EPIC: ";
             }
 
             if (workItemType.Equals("question", StringComparison.CurrentCultureIgnoreCase))
             {
-                summary += "Question: ";
+                summary += "QUESTION: ";
             }
 
             summary += workItem.GetValueAsString("System.Title");
