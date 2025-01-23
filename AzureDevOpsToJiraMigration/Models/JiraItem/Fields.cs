@@ -20,7 +20,7 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
         //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         //public Team Customfield_10001 { get; set; } // Team
         //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        //public Sprint Customfield_10020 { get; set; } // sprint number
+        public Sprint Customfield_10020 { get; set; } // sprint number
         //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         //public Status Status { get; set; }
         //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

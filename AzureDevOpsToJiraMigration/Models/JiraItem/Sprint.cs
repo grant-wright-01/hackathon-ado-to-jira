@@ -10,8 +10,10 @@ namespace AzureDevOpsToJiraMigration.Models.JiraItem
     public class Sprint
     {
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public double Id { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string Name { get; set; }
+        public string State { get; set; } = "future";
+        public int BoardId { get; set; } = 3950;
     }
 }

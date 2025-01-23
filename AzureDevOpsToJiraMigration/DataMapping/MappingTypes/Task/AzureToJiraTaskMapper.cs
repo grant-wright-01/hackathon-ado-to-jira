@@ -93,11 +93,11 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     //{
                     //    Name = workItem.GetValueAsString("System.State")
                     //},
-                    //////Customfield_10020 = new Sprint
-                    //////{
-                    //////    Id = 28127,
-                    //////    Name = $"TOR {workItem.GetSprint()}",
-                    //////}, // Sprint
+                    Customfield_10020 = new Sprint
+                    {
+                        Id = 28127,
+                        Name = $"TOR {workItem.GetSprint()}",
+                    }, // Sprint
                     //Customfield_10001 = new Team
                     //{
                     //    Id = "0e7b2cd5-58cc-4bdf-a03d-1056932bf9f8-190",
