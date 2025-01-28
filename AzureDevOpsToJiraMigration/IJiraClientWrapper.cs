@@ -10,6 +10,6 @@ namespace AzureDevOpsToJiraMigration
         Task<IEnumerable<JiraItemIssueType>> GetAllIssueTypes(string productId);
         Task<string> GetProjectId();
         Task<string> GetUserId(string emailAddress);
-        Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> items, IEnumerable<WorkItem> azItems);
+        Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> items, IEnumerable<WorkItem> azItems, Dictionary<string, int> sprintsDictionary);
     }
 }

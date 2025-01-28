@@ -160,13 +160,13 @@ namespace AzureDevOpsToJiraMigration
             };
         }
 
-        public async Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> jiraItems, IEnumerable<WorkItem> azItems)
+        public async Task CreateHierachicalJiraItems(IEnumerable<IGrouping<string, JiraItem>> jiraItems, IEnumerable<WorkItem> azItems, Dictionary<string, int> sprintsDictionary)
         {
             var migrationLog = new MigrationLog
             {
                 StartTime = DateTime.Now,
                 User = _jiraOptions.Value.Username,
-                NumberOfTicketsToProcess = jiraItems.Count()
+                NumberOfTicketsToProcess = (int)jiraItems.LongCount()
             };
 
             var jiraLogMessages = new List<JiraItemCreationLog>();
@@ -252,10 +252,12 @@ namespace AzureDevOpsToJiraMigration
                             ResponseBody = responseContent
                         });
 
+                        var azIndex = Int32.Parse(jiraItem.AzureTicketNumber);
 
+                        // migrate comments
                         if (jiraItem.Fields.Labels.Contains("HasComments"))
                         {
-                            var azIndex = Int32.Parse(jiraItem.AzureTicketNumber);
+                            
                             var wItemComments = await azItems.First(az => az.Id.Equals(azIndex)).GetComments(_azureOptions.Value);
 
                             foreach (var comment in wItemComments.Comments)
@@ -300,6 +302,50 @@ namespace AzureDevOpsToJiraMigration
                             
                         }
 
+                        var jiraSprint = azItems.First(az => az.Id.Equals(azIndex)).GetSprint(); // get issue sprint
+
+                        if (jiraSprint != "Team Tornado")
+                        {
+                            if (jiraItem.Fields.Issuetype.Id != "10022")
+                            {
+                                var sprintId = sprintsDictionary.First(sprint => sprint.Key == $"TOR {jiraSprint}").Value; // get id of retrieved jira sprint against sprint dictionary
+                                var sprintIssue = new MoveIssueToSprintBody()
+                                {
+                                    Issues = new List<string>() { createdItemId },
+                                };
+
+                                // sprint allocation
+                                var jsonSprintAllocationRequestString = JsonSerializer.Serialize(sprintIssue, GetSerializerOptions());
+                                var sprintAllocationContent = new StringContent(jsonSprintAllocationRequestString, Encoding.UTF8, "application/json");
+                                var sprintAllocationRequest = new HttpRequestMessage(HttpMethod.Post, $"/rest/agile/1.0/sprint/{sprintId}/issue")
+                                {
+                                    Content = sprintAllocationContent
+                                };
+
+                                sprintAllocationRequest.Headers.Authorization = new BasicAuthenticationHeaderValue(_jiraOptions.Value.Username, _jiraOptions.Value.ApiToken);
+
+                                var allocateJiraSprintResponse = await _httpClient.SendAsync(sprintAllocationRequest);
+                                var sprintAllocationResponseContent = await allocateJiraSprintResponse.Content.ReadAsStringAsync();
+
+                                if (!allocateJiraSprintResponse.IsSuccessStatusCode)
+                                {
+                                    jiraLogMessages.Add(new JiraItemCreationLog
+                                    {
+                                        AzureTicketId = jiraItem.AzureTicketNumber,
+                                        AzureItemUrl = $"{_azureOptions.Value.OrgUrl}/{_azureOptions.Value.TeamProjectName}/_workitems/edit/{jiraItem.AzureTicketNumber}",
+                                        IsSuccess = false,
+                                        RequestBody = jsonSprintAllocationRequestString,
+                                        ResponseBody = sprintAllocationResponseContent,
+                                        StatusCode = (int)allocateJiraSprintResponse.StatusCode
+                                    });
+
+                                    Console.WriteLine($"{DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToLongTimeString()} - ({counter}) - Failed to allocate jira issue to sprint.");
+                                    continue;
+                                }
+                                Console.WriteLine($"{DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToLongTimeString()} - ({counter}) - Successfully allocated jira issue, {createdItemId}, to sprint: TOR {jiraSprint}.");
+                            }
+                        }
+                        
                         _azureIdToJiraId.Add(jiraItem.AzureTicketNumber, createdItemKey);
                         successCounter++;
                     }

@@ -9,7 +9,6 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
     public class AzureToJiraTaskMapper : IAzureToJiraItemMapper
     {
         private readonly IOptions<AzureOptions> _azureOptions;
-        private readonly IJiraClientWrapper jiraClientWrapper;
 
         public AzureToJiraTaskMapper(IOptions<AzureOptions> azureOptions)
         {
@@ -58,7 +57,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     WorkItemType = workItemType,
                     Assignee = new Assignee
                     {
-                        Id = assigneeId
+                        Id = assigneeId == "" || assigneeId == "saif-ul.hussain@sainsburys.co.uk" ? null : assigneeId
                     },
                     Description = new Description
                     {
@@ -70,7 +69,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                                 {
                                     new InnerContent
                                     {
-                                        Text = GenerateDescription(workItem),
+                                        Text = GenerateDescription(workItem, assigneeId),
                                         Type = "text"
                                     }
                                 },
@@ -93,11 +92,11 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     //{
                     //    Name = workItem.GetValueAsString("System.State")
                     //},
-                    Customfield_10020 = new Sprint
-                    {
-                        Id = 28127,
-                        Name = $"TOR {workItem.GetSprint()}",
-                    }, // Sprint
+                    //Customfield_10020 = new Sprint
+                    //{
+                    //    Id = 28127,// to set
+                    //    Name = $"TOR {workItem.GetSprint()}",
+                    //}, // Sprint
                     //Customfield_10001 = new Team
                     //{
                     //    Id = "0e7b2cd5-58cc-4bdf-a03d-1056932bf9f8-190",
@@ -162,7 +161,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             return summary;
         }
 
-        private string GenerateDescription(WorkItem workItem)
+        private string GenerateDescription(WorkItem workItem, string assignee)
         {
             var descriptionBuilder = new StringBuilder();
             var description = workItem.GetValueAsString("System.Description");
@@ -193,7 +192,12 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             if (!string.IsNullOrEmpty(storyPoints))
             {
                 descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Story points: {storyPoints}");
-            } 
+            }
+
+            if (assignee == "saif-ul.hussain@sainsburys.co.uk") // Saif- no longer in tornado so no access to the board
+            {
+                descriptionBuilder.AppendLine($"Story Assignee: Saif-Ul Hussain {Environment.NewLine}");
+            }
 
             descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Azure ticket url:");
             descriptionBuilder.AppendLine(azureTicketUrl);

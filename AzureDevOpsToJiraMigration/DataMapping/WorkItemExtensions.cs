@@ -6,6 +6,7 @@ using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace AzureDevOpsToJiraMigration.DataMapping
 {
@@ -36,6 +37,13 @@ namespace AzureDevOpsToJiraMigration.DataMapping
                 tagList.Add("HasComments");
             }
 
+            if (workItem.GetValueAsString("System.IterationPath").Length != 0) 
+            {
+                tagList.Add( ReplaceWSpace(workItem.GetSprint(), "_") );
+            }
+
+            tagList.Add( ReplaceWSpace(workItem.GetValueAsString("System.State"),"_") );
+
             tagList.Add($"AzureItemId-{workItem.Id}");
 
             if (!workItem.Fields.ContainsKey("System.Tags"))
@@ -48,6 +56,12 @@ namespace AzureDevOpsToJiraMigration.DataMapping
             tagList.AddRange(csvTagValue.Split(";").Select(x => x.Replace(" ", string.Empty).Trim()));
 
             return tagList;
+        }
+
+        private static readonly Regex wSpace = new Regex(@"\s+");
+        public static string ReplaceWSpace(string text, string replacement)
+        {
+            return wSpace.Replace(text, replacement);
         }
 
         public static async Task<JiraItemComment> GetComments(this WorkItem workItem, AzureOptions azureOptions)
@@ -89,7 +103,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping
                                             }
                                         },
                                         Type = "doc",
-                                        Version = comment.Version
+                                        Version = 1
                                     }
                                 };
                     retrievedComments.Add(mappedComment);

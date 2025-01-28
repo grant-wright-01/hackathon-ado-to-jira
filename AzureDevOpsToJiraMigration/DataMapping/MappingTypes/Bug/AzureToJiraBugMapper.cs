@@ -31,7 +31,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
                     WorkItemType = workItemType,
                     Assignee = new Assignee
                     {
-                        Id = assigneeId
+                        Id = assigneeId == "" || assigneeId == "saif-ul.hussain@sainsburys.co.uk" ? null : assigneeId
                     },
                     Description = new Description
                     {
@@ -43,7 +43,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
                                 {
                                     new InnerContent
                                     {
-                                        Text = GenerateDescription(workItem),
+                                        Text = GenerateDescription(workItem, assigneeId),
                                         Type = "text"
                                     }
                                 },
@@ -97,7 +97,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
             return string.Equals(workItemType, "bug", StringComparison.OrdinalIgnoreCase);
         }
 
-        private string GenerateDescription(WorkItem workItem)
+        private string GenerateDescription(WorkItem workItem, string assignee)
         {
             var descriptionBuilder = new StringBuilder();
             var reproSteps = $"{workItem.GetValueAsString("Microsoft.VSTS.TCM.ReproSteps")}{Environment.NewLine}";
@@ -114,6 +114,11 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Bug
             if (!string.IsNullOrEmpty(status))
             {
                 descriptionBuilder.AppendLine($"Story Status: {status}{Environment.NewLine}");
+            }
+
+            if (assignee == "saif-ul.hussain@sainsburys.co.uk") // Saif- no longer in tornado so no access to the board
+            {
+                descriptionBuilder.AppendLine($"Story Assignee: Saif-Ul Hussain {Environment.NewLine}");
             }
 
 

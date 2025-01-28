@@ -39,24 +39,27 @@ namespace AzureDevOpsToJiraMigration
 
         public async Task Migrate()
         {
+            // values below can be transferred to appsettings
             var startDate = new DateTime(2023,11,15,0,0,0);
             int sprintTimelineInWeeks = 2;
-            int firstSprintNumber = 45;
-            int currentActiveSprint = 75;
+            int firstSprintNumber = 45; // 45;
+            int currentActiveSprint = 75; // 75;
+            int latestCreatedSprint = 85; // 75; // get max sprint
 
             // OPTIONAL: automated creation of sprints in JIRA
-            // i.e. run this alone by commenting the lines following this function call
+            // i.e. you can either run this alone by commenting the lines following this function call
             // when you intend to run this and comment this piece after sprints are created and uncomment the rest to continue with the migration
-            await CreateSprints(startDate,sprintTimelineInWeeks,firstSprintNumber,currentActiveSprint); 
+            // or run it and get the dictionary of sprints created which will be later used to allocate issues to sprint in a latter function
+            var createdJiraSprints = await CreateSprints(startDate,sprintTimelineInWeeks,firstSprintNumber,latestCreatedSprint);
 
-            //var azureItems = await _azureClient.GetWorkItems();
+            var azureItems = await _azureClient.GetWorkItems();
 
-            //var latest = azureItems.OrderByDescending(x => x.Id).Take(50);
+            var latest = azureItems.OrderByDescending(x => x.Id);//.Take(50);
 
-            //var mappedJiraItems = await _azureToJiraPropertyMapper.MapAzureItemsToJiraItems(latest);
+            var mappedJiraItems = await _azureToJiraPropertyMapper.MapAzureItemsToJiraItems(latest);
 
-            //var items = GroupAndOrderListByParent(mappedJiraItems);
-            //await _jiraWrapper.CreateHierachicalJiraItems(items, latest);  // post jira items to jira board
+            var items = GroupAndOrderListByParent(mappedJiraItems);
+            await _jiraWrapper.CreateHierachicalJiraItems(items, latest, createdJiraSprints);  // post jira items to jira board
         }
 
         private IEnumerable<IGrouping<string, JiraItem>> GroupAndOrderListByParent(IEnumerable<JiraItem> jiraItems)
@@ -77,13 +80,15 @@ namespace AzureDevOpsToJiraMigration
         }
 
         // creates sprints in JIRA board
-        private async Task CreateSprints(DateTime startDate, int sprintTimelineInWeeks, int firstSprintNumber, int currentActiveSprint) // slight automation to the sprint creation within jira
+        private async Task<Dictionary<string, int>> CreateSprints(DateTime startDate, int sprintTimelineInWeeks, int firstSprintNumber, int latestCreatedSprint) // slight automation to the sprint creation within jira
         {
+            var jiraSprintsDictionary = new Dictionary<string, int>();
+
             var sprintNumber = firstSprintNumber;
-            var daysInSprint = sprintTimelineInWeeks * 7 - 1; // where sprintTimelineInWeeks is the number of weeks
+            var daysInSprint = sprintTimelineInWeeks * 7 - 1; // where sprintTimelineInWeeks is the number of weeks in a sprint = 13 days
             var endDate = startDate.AddDays(daysInSprint);
 
-            var state = ""; // future
+            // var state = ""; // future
 
             // if sprintNum < currentActiveSprint state = closed
             // if sprintNum == currentActiveSprint state = active
@@ -124,10 +129,16 @@ namespace AzureDevOpsToJiraMigration
                     continue;
                 }
 
+                var responseObject = JObject.Parse(responseContent);
+                var createdSprintId = responseObject["id"]!.ToString();
+
+                jiraSprintsDictionary.Add(sprintToCreate.Name, Int32.Parse(createdSprintId)); // map sprints created in jira to their ids in dictionary
+
                 successCounter++;
                 sprintNumber++;
                 Console.WriteLine($"{DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToLongTimeString()} - ({counter}) - Successfully created sprint: TOR Sprint {sprintNumber-1}");
 
+                // initialise new sprint dates:
                 startDate = endDate.AddDays(1);
                 endDate = startDate.AddDays(daysInSprint);
 
@@ -139,7 +150,9 @@ namespace AzureDevOpsToJiraMigration
                     //OriginBoardId = 3950, // jiraOptions boardId
                 };
             }
-            while(sprintNumber <= currentActiveSprint);
+            while(sprintNumber <= latestCreatedSprint);
+
+            return jiraSprintsDictionary;
         }
 
         private JsonSerializerOptions GetSerializerOptions()

@@ -33,7 +33,7 @@ namespace AzureDevOpsToJiraMigration
             }
 
             var getWorkItemsQuery = await GetWorkItemClient(witClient, myQueriesFolder);
-            var filteredQuery = myQueriesFolder.Children.FirstOrDefault(x => x.Name.Equals("Get Test"));
+            var filteredQuery = myQueriesFolder.Children.FirstOrDefault(x => x.Name.Equals("Get Latest"));
 
             WorkItemQueryResult result = await witClient.QueryByIdAsync(filteredQuery.Id);
 
@@ -65,7 +65,7 @@ namespace AzureDevOpsToJiraMigration
 
         private async Task<QueryHierarchyItem> GetWorkItemClient(WorkItemTrackingHttpClient witClient, QueryHierarchyItem myQueriesFolder)
         {
-            string queryName = "Get Test";
+            string queryName = "Get Latest";
             QueryHierarchyItem getWorkItemsQuery = null;
 
             if (myQueriesFolder.Children != null)
