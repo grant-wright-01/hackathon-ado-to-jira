@@ -57,7 +57,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                     WorkItemType = workItemType,
                     Assignee = new Assignee
                     {
-                        Id = assigneeId == "" || assigneeId == "saif-ul.hussain@sainsburys.co.uk" ? null : assigneeId
+                        Id = assigneeId == "" ? null : assigneeId
                     },
                     Description = new Description
                     {
@@ -69,7 +69,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                                 {
                                     new InnerContent
                                     {
-                                        Text = GenerateDescription(workItem, assigneeId),
+                                        Text = GenerateDescription(workItem, assigneeId, matchingIssueType.Id),
                                         Type = "text"
                                     }
                                 },
@@ -161,22 +161,32 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
             return summary;
         }
 
-        private string GenerateDescription(WorkItem workItem, string assignee)
+        private string GenerateDescription(WorkItem workItem, string assignee, string matchingJiraIssueTypeId)
         {
             var descriptionBuilder = new StringBuilder();
             var description = workItem.GetValueAsString("System.Description");
             var azureTicketUrl = $"{_azureOptions.Value.OrgUrl}/{_azureOptions.Value.TeamProjectName}/_workitems/edit/{workItem.Id}";
 
-            string sprint = workItem.GetSprint();
-            if (!string.IsNullOrEmpty(sprint))
-            {
-                descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Issue sprint: {sprint}{Environment.NewLine}");
-            }
+            //string sprint = workItem.GetSprint();
+            //if (!string.IsNullOrEmpty(sprint))
+            //{
+            //    descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Issue sprint: {sprint}{Environment.NewLine}");
+            //}
 
             string status = workItem.GetValueAsString("System.State");
             if (!string.IsNullOrEmpty(status))
             {
-                descriptionBuilder.AppendLine($"Issue Status: {status}{Environment.NewLine}");
+                descriptionBuilder.AppendLine($"Ticket Status: {status}{Environment.NewLine}");
+            }
+
+            if (matchingJiraIssueTypeId == "10022") // check if issue is a subtask, if so indicate parent tickect number in description
+            {
+                descriptionBuilder.AppendLine($"Parent Ticket ID (Azure): {workItem.GetParentId()}{Environment.NewLine}");
+            }
+
+            if (assignee == "712020:cd8ecb59-4092-4ae8-854a-f57ec0ac9692") //  // check for Saif assigned stories- no longer in tornado so no access to the board
+            {
+                descriptionBuilder.AppendLine($"Ticket Assignee: Saif-Ul Hussain {Environment.NewLine}");
             }
 
             descriptionBuilder.AppendLine($"Description:{Environment.NewLine}{description}");
@@ -194,10 +204,7 @@ namespace AzureDevOpsToJiraMigration.DataMapping.MappingTypes.Task
                 descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Story points: {storyPoints}");
             }
 
-            if (assignee == "saif-ul.hussain@sainsburys.co.uk") // Saif- no longer in tornado so no access to the board
-            {
-                descriptionBuilder.AppendLine($"Story Assignee: Saif-Ul Hussain {Environment.NewLine}");
-            }
+            
 
             descriptionBuilder.AppendLine($"{Environment.NewLine}{Environment.NewLine}Azure ticket url:");
             descriptionBuilder.AppendLine(azureTicketUrl);
